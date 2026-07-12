@@ -50,8 +50,29 @@ cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
 indices = pd.Series(df.index, index=df['title']).drop_duplicates()
 
 
+def normalize_title(title):
+    return ' '.join(str(title).split()).lower()
+
+
+normalized_title_to_index = {
+    normalize_title(title): idx for title, idx in indices.items()
+}
+
+
 def ContentBasedRecommender(title, indices, cosine_sim, n=10):
-    id_ = indices[title]
+    if title in indices:
+        id_ = indices[title]
+    else:
+        normalized_key = normalize_title(title)
+        if normalized_key not in normalized_title_to_index:
+            suggestions = [
+                existing_title for existing_title in indices.index
+                if normalized_key in normalize_title(existing_title)
+            ][:5]
+            raise KeyError(
+                f"Title not found: {title}. Try one of: {suggestions}"
+            )
+        id_ = normalized_title_to_index[normalized_key]
 
     similarities = list(enumerate(cosine_sim[id_]))
     similarities = sorted(similarities, key=lambda x: x[1], reverse=True)
